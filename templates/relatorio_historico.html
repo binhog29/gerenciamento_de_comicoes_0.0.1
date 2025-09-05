@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Histórico Detalhado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-800 text-white font-sans flex flex-col items-center min-h-screen p-4">
+    <div class="bg-slate-700 p-6 rounded-lg shadow-xl w-full max-w-5xl">
+        <h1 class="text-3xl font-bold text-center mb-6">Relatório Detalhado</h1>
+        <p class="text-center text-lg mb-2">Período: {{ relatorio.data_inicio | strftime }} a {{ relatorio.data_fim | strftime }}</p>
+        <p class="text-center text-lg mb-2">Total de Instalações: {{ relatorio.num_instalacoes }}</p>
+        <p class="text-center text-lg font-bold mb-6">Comissão Total: R$ {{ "%.2f"|format(relatorio.total_comissoes) }}</p>
+        <p class="text-sm text-gray-400 text-center mb-4">Gerado em: {{ data_hoje.strftime('%d/%m/%Y às %H:%M') }}</p>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-slate-600 rounded-lg">
+                <thead class="bg-slate-500">
+                    <tr>
+                        <th class="p-3 text-left">Combo</th>
+                        <th class="p-3 text-left">Cliente</th>
+                        <th class="p-3 text-left">Observações</th>
+                        <th class="p-3 text-left">Data</th>
+                        <th class="p-3 text-left">Comissão</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instalacao in instalacoes %}
+                    <tr class="border-b border-slate-500">
+                        <td class="p-3">{{ instalacao.descricao_combo }}</td>
+                        <td class="p-3">{{ instalacao.login_cliente }}</td>
+                        <td class="p-3 text-sm text-slate-300">{{ instalacao.get('observacoes', 'N/A') }}</td>
+                        <td class="p-3">{{ instalacao.data_instalacao | strftime }}</td>
+                        <td class="p-3">R$ {{ "%.2f"|format(instalacao.comissao) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center mt-6">
+            <a href="{{ url_for('index') }}" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-md hover:bg-slate-500 transition">Voltar ao Início</a>
+        </div>
+    </div>
+</body>
+</html>

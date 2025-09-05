@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Comissões</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        select, input[type="text"], input[type="date"], textarea { color: #d1d5db; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+    </style>
+</head>
+<body class="bg-slate-800 text-white font-sans flex flex-col items-center min-h-screen p-4">
+
+    <div class="bg-slate-700 p-6 rounded-lg shadow-xl w-full max-w-5xl">
+        <h1 class="text-3xl font-bold text-center mb-6">Gerenciador de Comissões</h1>
+
+        <div class="space-y-4">
+            <h2 class="text-xl font-semibold mb-4 text-center">Registrar Nova Instalação/Reativação</h2>
+            <form action="{{ url_for('index') }}" method="post" class="space-y-4">
+                <div>
+                    <label for="tipo_combo" class="block text-sm font-medium mb-1">Tipo de Combo:</label>
+                    <select id="tipo_combo" name="tipo_combo" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                        <option value="">Selecione um Tipo...</option>
+                        <option value="CIDADE_FIBRA">CIDADE FIBRA</option>
+                        <option value="RURAL_FIBRA">RURAL FIBRA</option>
+                        <option value="RURAL_RADIO">RURAL RADIO</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="combo_key" class="block text-sm font-medium mb-1">Combo:</label>
+                    <select id="combo_key" name="combo_key" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                        <option value="">Selecione um Combo...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="login_cliente" class="block text-sm font-medium mb-1">Login do Cliente:</label>
+                    <input type="text" id="login_cliente" name="login_cliente" placeholder="Ex: joao.silva" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                </div>
+                <div>
+                    <label for="data_instalacao" class="block text-sm font-medium mb-1">Data de Instalação/Reativação:</label>
+                    <input type="date" id="data_instalacao" name="data_instalacao" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                </div>
+                <div>
+                    <label for="observacoes" class="block text-sm font-medium mb-1">Observações:</label>
+                    <textarea id="observacoes" name="observacoes" rows="3" placeholder="Ex: Cliente pediu para instalar o roteador na sala." class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-md hover:bg-blue-700 transition">
+                    Registrar
+                </button>
+            </form>
+        </div>
+
+        <hr class="my-8 border-slate-500">
+
+        <div>
+            <h2 class="text-xl font-semibold mb-4 text-center">Relatório de Instalações/Reativações Atuais</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-slate-600 rounded-lg">
+                    <thead class="bg-slate-500">
+                        <tr>
+                            <th class="p-3 text-left">Combo</th>
+                            <th class="p-3 text-left">Cliente</th>
+                            <th class="p-3 text-left">Observações</th>
+                            <th class="p-3 text-left">Data</th>
+                            <th class="p-3 text-left">Comissão</th>
+                            <th class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for instalacao in instalacoes %}
+                        <tr class="border-b border-slate-500">
+                            <td class="p-3">{{ instalacao.descricao_combo }}</td>
+                            <td class="p-3">{{ instalacao.login_cliente }}</td>
+                            <td class="p-3 text-sm text-slate-300">{{ instalacao.observacoes or 'N/A' }}</td>
+                            <td class="p-3">{{ instalacao.data_instalacao | strftime }}</td>
+                            <td class="p-3">R$ {{ "%.2f"|format(instalacao.comissao) }}</td>
+                            <td class="p-3 text-center flex justify-center space-x-2">
+                                <a href="{{ url_for('editar', instalacao_id=instalacao.id) }}" class="text-blue-400 hover:text-blue-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM3 5a2 2 0 012-2h1.5a.5.5 0 010 1H5a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-1.5a.5.5 0 011 0V15a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" /></svg>
+                                </a>
+                                <form action="{{ url_for('excluir', instalacao_id=instalacao.id) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este registro?');">
+                                    <button type="submit" class="text-red-400 hover:text-red-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" /></svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="p-3 text-center text-gray-400">Nenhuma instalação registrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-right mt-4 text-lg font-bold">Total: R$ {{ "%.2f"|format(total_comissoes) }}</div>
+            <div class="text-center mt-6">
+                <a href="{{ url_for('relatorio_imprimir') }}" class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-5 rounded-lg hover:bg-green-700 transition">Gerar Relatório para Impressão</a>
+            </div>
+        </div>
+
+        <hr class="my-8 border-slate-500">
+        
+        <div class="space-y-4">
+             <h2 class="text-xl font-semibold mb-4 text-center">Salvar Relatório e Limpar Período</h2>
+             <form action="{{ url_for('salvar_periodo') }}" method="post" class="space-y-4" onsubmit="return confirm('Confirmar: Salvar este período e limpar os dados? Esta ação é irreversível.');">
+                 <div>
+                    <label for="start_date" class="block text-sm font-medium mb-1">Data de Início:</label>
+                    <input type="date" id="start_date" name="start_date" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                 </div>
+                 <div>
+                    <label for="end_date" class="block text-sm font-medium mb-1">Data de Fim:</label>
+                    <input type="date" id="end_date" name="end_date" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                 </div>
+                 <button type="submit" class="w-full bg-red-600 text-white font-bold py-2 rounded-md hover:bg-red-700 transition">Salvar e Limpar</button>
+             </form>
+        </div>
+
+        <hr class="my-8 border-slate-500">
+        
+        <div>
+            <h2 class="text-xl font-semibold mb-4 text-center">Relatórios Históricos</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-slate-600 rounded-lg">
+                    <thead class="bg-slate-500">
+                        <tr>
+                            <th class="p-3 text-left">Período</th>
+                            <th class="p-3 text-left">Nº de Instalações</th>
+                            <th class="p-3 text-left">Comissão Total</th>
+                            <th class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for relatorio in historico %}
+                        <tr class="border-b border-slate-500">
+                            <td class="p-3">{{ relatorio.data_inicio | strftime }} a {{ relatorio.data_fim | strftime }}</td>
+                            <td class="p-3">{{ relatorio.num_instalacoes }}</td>
+                            <td class="p-3">R$ {{ "%.2f"|format(relatorio.total_comissoes) }}</td>
+                            <td class="p-3 text-center">
+                                <a href="{{ url_for('relatorio_historico', relatorio_id=relatorio.id) }}" class="text-green-400 hover:text-green-600 font-semibold inline-block mr-4">Ver</a>
+                                <a href="{{ url_for('relatorio_historico_imprimir', relatorio_id=relatorio.id) }}" class="text-blue-400 hover:text-blue-600 font-semibold inline-block">Imprimir</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="p-3 text-center text-gray-400">Nenhum relatório histórico salvo.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const COMBOS_JS = {{ COMBOS_JS | safe }};
+        function updateCombos(tipo) {
+            const comboSelect = document.getElementById('combo_key');
+            comboSelect.innerHTML = '<option value="">Selecione um Combo...</option>';
+            if (tipo && COMBOS_JS[tipo]) {
+                const combos = COMBOS_JS[tipo];
+                for (const key in combos) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${combos[key].descricao} - R$ ${combos[key].preco.toFixed(2)}`;
+                    comboSelect.appendChild(option);
+                }
+            }
+        }
+        document.getElementById('tipo_combo').addEventListener('change', (e) => updateCombos(e.target.value));
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js');
+        }
+    </script>
+</body>
+</html>

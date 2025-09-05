@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Comissões</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: #fff; color: #000; }
+            table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+            th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+            .table-print { background-color: transparent !important; }
+            .table-print th { background-color: #f2f2f2 !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-800 text-white font-sans p-8">
+    <div class="max-w-4xl mx-auto bg-white text-black p-10 rounded-lg">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold">Relatório de Comissões</h1>
+            <p class="text-sm text-gray-600">Gerado em: {{ data_hoje.strftime('%d/%m/%Y às %H:%M') }}</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-print">
+                <thead class="bg-slate-200">
+                    <tr>
+                        <th class="p-3">Combo</th>
+                        <th class="p-3">Cliente</th>
+                        <th class="p-3">Observações</th>
+                        <th class="p-3">Data</th>
+                        <th class="p-3 text-right">Comissão</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instalacao in instalacoes %}
+                    <tr class="border-b">
+                        <td class="p-3">{{ instalacao.descricao_combo }}</td>
+                        <td class="p-3">{{ instalacao.login_cliente }}</td>
+                        <td class="p-3">{{ instalacao.observacoes or '' }}</td>
+                        <td class="p-3">{{ instalacao.data_instalacao | strftime }}</td>
+                        <td class="p-3 text-right">R$ {{ "%.2f"|format(instalacao.comissao) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="font-bold bg-slate-200">
+                    <tr>
+                        <td colspan="4" class="p-3 text-right">TOTAL DE COMISSÕES:</td>
+                        <td class="p-3 text-right">R$ {{ "%.2f"|format(total_comissoes) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="text-center mt-10 no-print">
+            <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition">
+                Imprimir ou Salvar como PDF
+            </button>
+            <a href="{{ url_for('index') }}" class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-700 transition ml-4">
+                Voltar
+            </a>
+        </div>
+    </div>
+</body>
+</html>
