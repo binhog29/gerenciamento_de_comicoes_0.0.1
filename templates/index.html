@@ -8,14 +8,20 @@
     <link rel="manifest" href="/manifest.json">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        select, input[type="text"], input[type="date"], textarea { color: #d1d5db; }
+        select, input[type="text"], input[type="date"], input[type="number"], textarea { color: #d1d5db; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
     </style>
 </head>
 <body class="bg-slate-800 text-white font-sans flex flex-col items-center min-h-screen p-4">
 
     <div class="bg-slate-700 p-6 rounded-lg shadow-xl w-full max-w-5xl">
-        <h1 class="text-3xl font-bold text-center mb-6">Gerenciador de Comissões</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Gerenciador de Comissões</h1>
+            <div class="text-right">
+                <p class="text-slate-300">Olá, {{ current_user.username }}!</p>
+                <a href="{{ url_for('logout') }}" class="text-sm text-red-400 hover:underline">Sair</a>
+            </div>
+        </div>
 
         <div class="space-y-4">
             <h2 class="text-xl font-semibold mb-4 text-center">Registrar Nova Instalação/Reativação</h2>
@@ -40,6 +46,10 @@
                     <input type="text" id="login_cliente" name="login_cliente" placeholder="Ex: joao.silva" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
                 </div>
                 <div>
+                    <label for="porcentagem_comissao" class="block text-sm font-medium mb-1">Porcentagem da Comissão (%):</label>
+                    <input type="number" id="porcentagem_comissao" name="porcentagem_comissao" value="15" step="0.1" placeholder="Ex: 15" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
+                </div>
+                <div>
                     <label for="data_instalacao" class="block text-sm font-medium mb-1">Data de Instalação/Reativação:</label>
                     <input type="date" id="data_instalacao" name="data_instalacao" class="w-full p-2 bg-slate-600 border border-slate-500 rounded-md" required>
                 </div>
@@ -56,7 +66,7 @@
         <hr class="my-8 border-slate-500">
 
         <div>
-            <h2 class="text-xl font-semibold mb-4 text-center">Relatório de Instalações/Reativações Atuais</h2>
+            <h2 class="text-xl font-semibold mb-4 text-center">Minhas Instalações/Reativações Atuais</h2>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-slate-600 rounded-lg">
                     <thead class="bg-slate-500">
@@ -76,7 +86,7 @@
                             <td class="p-3">{{ instalacao.login_cliente }}</td>
                             <td class="p-3 text-sm text-slate-300">{{ instalacao.observacoes or 'N/A' }}</td>
                             <td class="p-3">{{ instalacao.data_instalacao | strftime }}</td>
-                            <td class="p-3">R$ {{ "%.2f"|format(instalacao.comissao) }}</td>
+                            <td class="p-3">R$ {{ "%.2f"|format(instalacao.comissao) }} ({{ instalacao.porcentagem_comissao }}%)</td>
                             <td class="p-3 text-center flex justify-center space-x-2">
                                 <a href="{{ url_for('editar', instalacao_id=instalacao.id) }}" class="text-blue-400 hover:text-blue-600">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM3 5a2 2 0 012-2h1.5a.5.5 0 010 1H5a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-1.5a.5.5 0 011 0V15a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" /></svg>

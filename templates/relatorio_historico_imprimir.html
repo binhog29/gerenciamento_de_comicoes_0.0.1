@@ -40,7 +40,7 @@
                         <td class="p-3">{{ instalacao.login_cliente }}</td>
                         <td class="p-3">{{ instalacao.get('observacoes', '') }}</td>
                         <td class="p-3">{{ instalacao.data_instalacao | strftime }}</td>
-                        <td class="p-3 text-right">R$ {{ "%.2f"|format(instalacao.comissao) }}</td>
+                        <td class="p-3 text-right">R$ {{ "%.2f"|format(instalacao.comissao) }} ({{ instalacao.get('porcentagem_comissao', 'N/A') }}%)</td>
                     </tr>
                     {% endfor %}
                 </tbody>

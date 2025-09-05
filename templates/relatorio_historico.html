@@ -33,15 +33,16 @@
                         <td class="p-3">{{ instalacao.login_cliente }}</td>
                         <td class="p-3 text-sm text-slate-300">{{ instalacao.get('observacoes', 'N/A') }}</td>
                         <td class="p-3">{{ instalacao.data_instalacao | strftime }}</td>
-                        <td class="p-3">R$ {{ "%.2f"|format(instalacao.comissao) }}</td>
+                        <td class="p-3">R$ {{ "%.2f"|format(instalacao.comissao) }} ({{ instalacao.get('porcentagem_comissao', 'N/A') }}%)</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <div class="text-center mt-6">
+        <div class="text-center mt-6 flex justify-center space-x-4">
             <a href="{{ url_for('index') }}" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-md hover:bg-slate-500 transition">Voltar ao Início</a>
+            <a href="{{ url_for('relatorio_historico_imprimir', relatorio_id=relatorio.id) }}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition">Imprimir Relatório</a>
         </div>
     </div>
 </body>
