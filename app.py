@@ -11,8 +11,7 @@ from flask_bcrypt import Bcrypt
 
 # --- Configuração do Flask e Extensões ---
 app = Flask(__name__)
-# É crucial ter uma SECRET_KEY para o Flask-Login funcionar
-app.config['SECRET_KEY'] = 'uma-chave-secreta-muito-segura-e-dificil-de-adivinhar' 
+app.config['SECRET_KEY'] = 'uma-chave-secreta-muito-segura-e-dificil-de-adivinhar'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -20,9 +19,9 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login' # Redireciona usuários não logados para a rota 'login'
+login_manager.login_view = 'login'
 login_manager.login_message = "Por favor, faça o login para acessar esta página."
-login_manager.login_message_category = "error"
+login_manager.login_message_category = "info"
 
 # --- Modelos do Banco de Dados ---
 @login_manager.user_loader
@@ -33,7 +32,14 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(150), nullable=False)
-    instalacoes = db.relationship('Instalacao', backref='tecnico', lazy=True)
+    instalacoes = db.relationship('Instalacao', backref='author', lazy=True)
+    relatorios = db.relationship('RelatorioHistorico', backref='author', lazy=True)
+
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
 
 class Instalacao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -47,7 +53,6 @@ class Instalacao(db.Model):
     comissao = db.Column(db.Float, nullable=False)
     observacoes = db.Column(db.String(300), nullable=True)
     data_registro = db.Column(db.DateTime, default=datetime.datetime.now)
-    # --- NOVO CAMPO PARA ASSOCIAR AO TÉCNICO ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class RelatorioHistorico(db.Model):
@@ -58,6 +63,7 @@ class RelatorioHistorico(db.Model):
     num_instalacoes = db.Column(db.Integer, nullable=False)
     data_salva = db.Column(db.DateTime, default=datetime.datetime.now)
     instalacoes_json = db.Column(db.String, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # --- Dicionário de Combos e Funções Auxiliares ---
 COMBOS = {
@@ -83,11 +89,11 @@ def login():
         return redirect(url_for('index'))
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form['username']).first()
-        if user and bcrypt.check_password_hash(user.password_hash, request.form['password']):
+        if user and user.check_password(request.form['password']):
             login_user(user)
             return redirect(url_for('index'))
         else:
-            flash('Login inválido. Verifique seu nome de usuário e senha.', 'error')
+            flash('Login inválido. Verifique o seu nome de utilizador e senha.', 'danger')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -100,19 +106,19 @@ def register():
         confirm_password = request.form['confirm_password']
 
         if password != confirm_password:
-            flash('As senhas não coincidem!', 'error')
+            flash('As senhas não coincidem!', 'danger')
             return redirect(url_for('register'))
         
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('Este nome de usuário já existe. Por favor, escolha outro.', 'error')
+            flash('Este nome de utilizador já existe. Por favor, escolha outro.', 'warning')
             return redirect(url_for('register'))
 
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=username, password_hash=hashed_password)
+        new_user = User(username=username)
+        new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
-        flash('Sua conta foi criada com sucesso! Agora você pode fazer o login.', 'success')
+        flash('A sua conta foi criada com sucesso! Agora pode fazer o login.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -128,7 +134,6 @@ def logout():
 def index():
     if request.method == 'POST':
         try:
-            # ... (código de processamento do formulário)
             nova_instalacao = Instalacao(
                 tipo_combo=request.form['tipo_combo'],
                 descricao_combo=COMBOS[request.form['tipo_combo']][request.form['combo_key']]["descricao"],
@@ -139,18 +144,18 @@ def index():
                 porcentagem_comissao=float(request.form['porcentagem_comissao']),
                 comissao=arredondar_valor(COMBOS[request.form['tipo_combo']][request.form['combo_key']]["preco"]) * (float(request.form['porcentagem_comissao']) / 100.0),
                 observacoes=request.form.get('observacoes', ''),
-                user_id=current_user.id # Associa a instalação ao usuário logado
+                author=current_user
             )
             db.session.add(nova_instalacao)
             db.session.commit()
+            flash('Instalação registada com sucesso!', 'success')
             return redirect(url_for('index'))
         except Exception as e:
             return f"Ocorreu um erro: {e}", 500
 
-    # Exibe apenas as instalações do usuário logado
-    instalacoes = Instalacao.query.filter_by(user_id=current_user.id).order_by(Instalacao.data_registro.desc()).all()
+    instalacoes = Instalacao.query.filter_by(author=current_user).order_by(Instalacao.data_registro.desc()).all()
     total_comissoes = sum(inst.comissao for inst in instalacoes)
-    historico = RelatorioHistorico.query.order_by(RelatorioHistorico.data_salva.desc()).all()
+    historico = RelatorioHistorico.query.filter_by(author=current_user).order_by(RelatorioHistorico.data_salva.desc()).all()
     
     return render_template('index.html', instalacoes=instalacoes, total_comissoes=total_comissoes, historico=historico, COMBOS_JS=json.dumps(COMBOS))
 
@@ -158,14 +163,12 @@ def index():
 @login_required
 def editar(instalacao_id):
     instalacao = Instalacao.query.get_or_404(instalacao_id)
-    # Garante que um usuário só possa editar suas próprias instalações
-    if instalacao.user_id != current_user.id:
-        flash("Você não tem permissão para editar este registro.", "error")
+    if instalacao.author != current_user:
+        flash("Você não tem permissão para editar este registo.", "danger")
         return redirect(url_for('index'))
     
     if request.method == 'POST':
         try:
-            # ... (código de atualização)
             instalacao.tipo_combo = request.form['tipo_combo']
             combo_key = request.form['combo_key']
             instalacao.porcentagem_comissao = float(request.form['porcentagem_comissao'])
@@ -177,6 +180,7 @@ def editar(instalacao_id):
             instalacao.data_instalacao = request.form['data_instalacao']
             instalacao.observacoes = request.form.get('observacoes', '')
             db.session.commit()
+            flash('Registo atualizado com sucesso!', 'success')
             return redirect(url_for('index'))
         except Exception as e:
             db.session.rollback()
@@ -187,12 +191,13 @@ def editar(instalacao_id):
 @login_required
 def excluir(instalacao_id):
     instalacao = Instalacao.query.get_or_404(instalacao_id)
-    if instalacao.user_id != current_user.id:
-        flash("Você não tem permissão para excluir este registro.", "error")
+    if instalacao.author != current_user:
+        flash("Você não tem permissão para excluir este registo.", "danger")
         return redirect(url_for('index'))
     try:
         db.session.delete(instalacao)
         db.session.commit()
+        flash('Registo excluído com sucesso!', 'success')
         return redirect(url_for('index'))
     except Exception as e:
         return f"Ocorreu um erro ao excluir: {e}", 500
@@ -204,31 +209,34 @@ def salvar_periodo():
         start_date_str = request.form['start_date']
         end_date_str = request.form['end_date']
         
-        # Filtra apenas as instalações do usuário logado no período
         instalacoes_periodo = Instalacao.query.filter(
-            Instalacao.user_id == current_user.id,
+            Instalacao.author == current_user,
             Instalacao.data_instalacao.between(start_date_str, end_date_str)
         ).all()
         
         if instalacoes_periodo:
-            # ... (código para criar relatório)
             total_comissoes_periodo = sum(inst.comissao for inst in instalacoes_periodo)
             instalacoes_list = [{'descricao_combo': i.descricao_combo, 'login_cliente': i.login_cliente, 'data_instalacao': i.data_instalacao, 'comissao': i.comissao, 'porcentagem_comissao': i.porcentagem_comissao, 'observacoes': i.observacoes} for i in instalacoes_periodo]
-            novo_relatorio = RelatorioHistorico(data_inicio=start_date_str, data_fim=end_date_str, total_comissoes=total_comissoes_periodo, num_instalacoes=len(instalacoes_periodo), instalacoes_json=json.dumps(instalacoes_list))
+            novo_relatorio = RelatorioHistorico(data_inicio=start_date_str, data_fim=end_date_str, total_comissoes=total_comissoes_periodo, num_instalacoes=len(instalacoes_periodo), instalacoes_json=json.dumps(instalacoes_list), author=current_user)
             db.session.add(novo_relatorio)
             Instalacao.query.filter(Instalacao.id.in_([i.id for i in instalacoes_periodo])).delete(synchronize_session=False)
-        db.session.commit()
+            db.session.commit()
+            flash('Período salvo no histórico com sucesso!', 'success')
+        else:
+            flash('Nenhuma instalação encontrada no período selecionado.', 'warning')
         return redirect(url_for('index'))
     except Exception as e:
         db.session.rollback()
         return f"Ocorreu um erro ao salvar o período: {e}", 500
 
-# --- Rotas de Relatório (Abertas ou Protegidas, conforme necessidade) ---
-# Vamos mantê-las protegidas por enquanto
+# --- Rotas de Relatório ---
 @app.route('/relatorio-historico/<int:relatorio_id>')
 @login_required
 def relatorio_historico(relatorio_id):
     relatorio = RelatorioHistorico.query.get_or_404(relatorio_id)
+    if relatorio.author != current_user:
+        flash("Você não tem permissão para ver este relatório.", "danger")
+        return redirect(url_for('index'))
     instalacoes_lista = json.loads(relatorio.instalacoes_json)
     data_hoje = datetime.datetime.now()
     return render_template('relatorio_historico.html', relatorio=relatorio, instalacoes=instalacoes_lista, data_hoje=data_hoje)
@@ -236,7 +244,7 @@ def relatorio_historico(relatorio_id):
 @app.route('/relatorio/imprimir')
 @login_required
 def relatorio_imprimir():
-    instalacoes = Instalacao.query.filter_by(user_id=current_user.id).order_by(Instalacao.data_instalacao.asc()).all()
+    instalacoes = Instalacao.query.filter_by(author=current_user).order_by(Instalacao.data_instalacao.asc()).all()
     total_comissoes = sum(inst.comissao for inst in instalacoes)
     return render_template('relatorio_imprimir.html', instalacoes=instalacoes, total_comissoes=total_comissoes, data_hoje=datetime.datetime.now())
 
@@ -244,10 +252,13 @@ def relatorio_imprimir():
 @login_required
 def relatorio_historico_imprimir(relatorio_id):
     relatorio = RelatorioHistorico.query.get_or_404(relatorio_id)
+    if relatorio.author != current_user:
+        flash("Você não tem permissão para ver este relatório.", "danger")
+        return redirect(url_for('index'))
     instalacoes_lista = json.loads(relatorio.instalacoes_json)
     return render_template('relatorio_historico_imprimir.html', relatorio=relatorio, instalacoes=instalacoes_lista, data_hoje=datetime.datetime.now())
 
-# --- Rotas de Manifest e Service Worker (não precisam de login) ---
+# --- Rotas de PWA ---
 @app.route('/manifest.json')
 def manifest():
     return Response(json.dumps({"name": "Gerenciador de Comissões", "short_name": "Comissões", "start_url": "/", "display": "standalone", "background_color": "#1e293b", "theme_color": "#1e293b", "icons": [{"src": "/static/img/ic_launcher.png", "sizes": "512x512", "type": "image/png"}]}), mimetype='application/json')
@@ -256,8 +267,6 @@ def manifest():
 def service_worker():
     return Response("self.addEventListener('fetch', (event) => { event.respondWith(fetch(event.request)); });", mimetype='application/javascript')
 
-# --- Ponto de Entrada do Aplicativo ---
+# --- Ponto de Entrada ---
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all() 
     app.run(host='0.0.0.0', port=5000, debug=True)
