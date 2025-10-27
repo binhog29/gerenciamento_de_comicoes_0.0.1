@@ -14,3 +14,20 @@ A plataforma permite o cadastro dos serviços, dos combos e das regras de negóc
 
 Com isso, basta lançar as Ordens de Serviço executadas e o sistema calcula automaticamente o valor devido a cada técnico, 
 gerando relatórios precisos para o departamento financeiro e um extrato claro para o colaborador.
+
+## ✨ Funcionalidades Principais
+- [ ] Cadastro de Técnicos
+- [ ] Cadastro de Serviços e Combos (com valores base para a comissão)
+- [ ] Lançamento de Ordens de Serviço (Instalação, Reativação, etc.)
+- [ ] Cálculo automático da comissão (baseado na regra de 15%)
+- [ ] Geração de Relatório de Pagamentos por técnico
+- [ ] Painel para o técnico consultar seu extrato de comissões (Planejado)
+
+## 🛠️ Tecnologias Utilizadas
+* **Back-end:** Python
+* **Framework Web:** Flask
+* **Banco de Dados:** SQLite
+* **ORM:** Flask-SQLAlchemy (com Flask-Migrate)
+* **Front-end:** HTML, Jinja2
+* **Framework CSS:** Tailwind CSS
+* 
